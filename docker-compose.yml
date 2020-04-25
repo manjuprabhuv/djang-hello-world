@@ -1,0 +1,45 @@
+version: '3.5'
+
+services:
+    db:
+        image: mdillon/postgis:9.6-alpine
+        command: postgres -c 'max_connections=200'
+        logging:
+            driver: none
+        environment:
+            POSTGRES_USER: db_user
+            POSTGRES_DB: hello_world
+            POSTGRES_PASSWORD: password
+        volumes:
+            - db-volume:/var/lib/postgresql/data:delegated
+
+    web:
+        stdin_open: true
+        tty: true
+        build:
+            context: ./
+            dockerfile: ./Dockerfile
+        image: hello-world-web
+        command: /bin/sh -c './manage.py runserver 0.0.0.0:8000'
+        volumes:
+            - .:/srv/web:delegated
+        ports:
+            - ${WEB_PORT}:8000
+        env_file: .env
+        environment:
+            - TZ=Australia/Sydney
+            - DB_HOST=db
+        depends_on:
+            - db
+        networks:
+            default:
+            local_dev:
+        user: '1000:1000'
+
+volumes:
+    db-volume:
+        name: local-db
+
+networks:
+    local_dev:
+        external: true
